@@ -20,6 +20,6 @@ def get_yahoo_data(symbol, start_date, end_date):
 
     df = ticker.history(interval='1d', start= start_date, end= end_date)
     df = df.reset_index()
-    df = df.drop(columns= ['Dividends','Stock Splits'])
+    df = df.drop(columns= ['Dividends','Stock Splits', 'Volume'])
     df['timestamp'] = df['Date'].apply(lambda x: x.timestamp())
     return df
