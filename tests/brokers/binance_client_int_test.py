@@ -6,6 +6,7 @@ from cryptobot.brokers.enums import Intervals, Symbols
 
 @pytest.fixture
 def binance_client():
+    print("SECRETS", os.getenv('API_KEY'), os.getenv('API_SECRET'))
     return BinanceClient(os.getenv('API_KEY'), os.getenv('API_SECRET'))
 
 @pytest.fixture
