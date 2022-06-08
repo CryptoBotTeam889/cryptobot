@@ -47,6 +47,9 @@ jobs:
       - name: Install package and test
         run: |
           make test clean
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          API_SECRET: ${{ secrets.API_SECRET }}
         # # install
 
   # # 🤖 CD paragraph
