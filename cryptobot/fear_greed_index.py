@@ -1,6 +1,5 @@
-import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 import requests
 
 '''
@@ -20,11 +19,11 @@ def fear_greed_index(initial_date):
     initial date = initial data to start gathering the index. Oldest data possible 2018-02-01
     '''
     #input for firs date = YYYY/MM/DD
-    date = datetime.strptime(initial_date, '%Y-%m-%d')
+    initial_date = datetime.strptime(initial_date, '%Y-%m-%d')
 
     if date>= FIRST_DATE:
         today = date.today()
-        num_days = (today - date)
+        num_days = (today - initial_date)
         #URL for scraping
         URL = f'https://api.alternative.me/fng/?limit={num_days.days}'
 

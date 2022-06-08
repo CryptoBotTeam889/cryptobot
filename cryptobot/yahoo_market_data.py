@@ -22,4 +22,12 @@ def get_yahoo_data(symbol, start_date, end_date):
     df = df.reset_index()
     df = df.drop(columns= ['Dividends','Stock Splits', 'Volume'])
     df['timestamp'] = df['Date'].apply(lambda x: x.timestamp())
+
+    columns = df.columns
+    new_columns = []
+    for column in columns:
+        new_columns.append(f'{symbol}_{str(column)}')
+
+    df.columns = new_columns
+
     return df
