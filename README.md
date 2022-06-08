@@ -72,5 +72,3 @@ mkdir tmp
 cd tmp
 cryptobot-run
 ```
-
-a

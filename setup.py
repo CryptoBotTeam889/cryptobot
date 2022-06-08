@@ -1,5 +1,8 @@
 from setuptools import find_packages
 from setuptools import setup
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 with open('requirements.txt') as f:
     content = f.readlines()
