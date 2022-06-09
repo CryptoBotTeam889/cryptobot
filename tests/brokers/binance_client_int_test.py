@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 import pytest
 
@@ -48,6 +49,12 @@ def test_create_sell_order(binance_client):
     # TODO Improve this test.__
     binance_client.create_sell_order(Symbols.BTCUSDT, 10)
 
+def test_get_candles(binance_client, interval, interval_in_timestamp):
+    candles = binance_client.get_candles(Symbols.BTCUSDT, interval, datetime.now() - timedelta(days=30), datetime.now())
+    assert type(candles) == list
+    assert len(candles) > 0
+    assert candles[0][6] - candles[0][0] < interval_in_timestamp
+    
 def test_parse_candle():
     dirty_candle = [1654686000000, '30382.79000000', '30504.86000000', '30340.73000000', '30419.64000000',
                         '217.16036200', 1654689599999, '6608879.30388600', 6047, '125.00703900', '3804377.38752454', '0']

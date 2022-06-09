@@ -2,6 +2,7 @@ from enum import Enum
 
 class Symbols(Enum):
     BTCUSDT = 'BTCUSDT'
+    ETHUSDT = 'ETHUSDT'
     
 class Intervals(Enum):
     ONE_HOUR = '1h'
