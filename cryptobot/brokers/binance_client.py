@@ -1,8 +1,14 @@
+from datetime import datetime
 from http import HTTPStatus
 from binance import Client
 
 from cryptobot.brokers.broker_interface import BrokerInterface
 from cryptobot.brokers.enums import OrderType, SnapshotType, Symbols, Intervals, OperationType
+
+COLUMNS = ['open_time', 'open', 'high', 'low', 'close',
+                'volume', 'close_time', 'quote_asset_volume',
+                'number_of_trades', 'taker_buy_base_asset_volume',
+                'taker_buy_quote_asset_volume']
 
 class BinanceClient(BrokerInterface):
     """
@@ -127,7 +133,7 @@ class BinanceClient(BrokerInterface):
         symbol : Symbols
             It's the symbol of the candle.
         
-        Inteval: Intervals
+        interval : Intervals
             It's the interval of the candle.
             
         Returns
@@ -153,6 +159,48 @@ class BinanceClient(BrokerInterface):
             return parse_candle(candles[0])
         raise Exception('Binance API didn\'t return any candle for symbol: {} and interval: {}. '.format(symbol.value, interval.value))
     
+    def get_candles(self, symbol: Symbols, interval: Intervals, start_time: datetime, end_time: datetime):
+        """
+        Returns the last complete candle for the given symbol and interval.
+        It means that the candle is complete, so the close time is before the current time. 
+        
+        See docstring of :Symbols:`cryptobot.brokers.enums.Symbols` for more info about the symbols.
+        See docstring of :Intervals:`cryptobot.brokers.enums.Intervals` for more info about the intervals.
+        
+        Parameters
+        ----------
+        symbol : Symbols
+            It's the symbol of the candle.
+        
+        inteval : Intervals
+            It's the interval of the candle.
+        
+        start_time : datetime
+            It's the open time of the first candle.
+        
+        end_time : datetime
+            It's the close time of the last candle.
+                    
+        Returns
+        -------
+        list
+            The list contains lists that include the values of the candle in the same order
+            that COLUMNS constant.
+
+            Example: [[1654686000000, 30382.79, 30504.86, 30340.73, 30419.64,
+                        217.160362, 1654689599999, 6608879.303886, 6047, 125.007039, 3804377.38752454]]
+        """
+        
+        start = round(start_time.timestamp()) * 1000
+        end = round(min(end_time.timestamp(), datetime.now().timestamp())) * 1000
+        candles = []
+        while(start < end):
+            candles_aux = self.client.get_klines(symbol=symbol.value, interval=interval.value, startTime = start, endTime = end, limit=1000)
+            candles = candles + candles_aux
+            start = candles_aux[-1][6] if candles_aux else end
+            
+        return [parse_candle(candle) for candle in candles]
+
     def create_buy_order(self, symbol: Symbols, quantity: float):
         """
         Create a buy order for the given symbol and quantity, considering the market price.
@@ -217,7 +265,3 @@ def parse_candle(candle):
         float(candle[9]),
         float(candle[10])
     ]
-
-
-
-
