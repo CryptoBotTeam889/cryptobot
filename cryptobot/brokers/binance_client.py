@@ -3,12 +3,14 @@ from http import HTTPStatus
 from binance import Client
 
 from cryptobot.brokers.broker_interface import BrokerInterface
-from cryptobot.brokers.enums import OrderType, SnapshotType, Symbols, Intervals, OperationType
+from cryptobot.brokers.enums import (
+    OrderType,
+    SnapshotType,
+    Symbols,
+    Intervals,
+    OperationType,
+)
 
-COLUMNS = ['open_time', 'open', 'high', 'low', 'close',
-                'volume', 'close_time', 'quote_asset_volume',
-                'number_of_trades', 'taker_buy_base_asset_volume',
-                'taker_buy_quote_asset_volume']
 
 class BinanceClient(BrokerInterface):
     """
@@ -16,11 +18,16 @@ class BinanceClient(BrokerInterface):
     It means that if you have multiple accounts, you need to have multiple BinanceClient instances.
     It offers a bunch of methods to interact with the Binance API easily and abstract unnecessary complexities.
     
-    Attributes
+    Instance Attributes
     ----------
     client : BinanceClient
         It's the connection to the Binance API.
         
+    Class Attributes
+    ----------
+    COLUMNS_CANDLE : list
+        It's the columns of the CSV file.
+
     Instance methods
     -------
     get_account_status()
@@ -40,6 +47,20 @@ class BinanceClient(BrokerInterface):
         
     """
     
+    COLUMNS_CANDLE = [
+        "open_time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "close_time",
+        "quote_asset_volume",
+        "number_of_trades",
+        "taker_buy_base_asset_volume",
+        "taker_buy_quote_asset_volume",
+    ]
+
     def __init__(self, api_key, secret_key):
         """
         Parameters
@@ -77,8 +98,10 @@ class BinanceClient(BrokerInterface):
         """
         
         res = self.client.get_account_snapshot(type=SnapshotType.SPOT.value)
-        if res.get('code') != HTTPStatus.OK:
-            raise Exception('Error while getting account status. {}'.format(res.get('msg')))
+        if res.get("code") != HTTPStatus.OK:
+            raise Exception(
+                "Error while getting account status. {}".format(res.get("msg"))
+            )
         return parse_account_snapshot(res)
     
     def get_current_candle(self, symbol: Symbols, interval: Intervals):
@@ -115,10 +138,16 @@ class BinanceClient(BrokerInterface):
             If the Binance API returns no candles.
         """
         
-        candles = self.client.get_klines(symbol=symbol.value, interval=interval.value, limit=1)
+        candles = self.client.get_klines(
+            symbol=symbol.value, interval=interval.value, limit=1
+        )
         if candles:
             return parse_candle(candles[0])
-        raise Exception('Binance API didn\'t return any candle for symbol: {} and interval: {}. '.format(symbol.value, interval.value))
+        raise Exception(
+            "Binance API didn't return any candle for symbol: {} and interval: {}. ".format(
+                symbol.value, interval.value
+            )
+        )
     
     def get_last_complete_candle(self, symbol: Symbols, interval: Intervals):
         """
@@ -154,12 +183,25 @@ class BinanceClient(BrokerInterface):
             If the Binance API returns no candles.
         """
  
-        candles = self.client.get_klines(symbol=symbol.value, interval=interval.value, limit=2)
+        candles = self.client.get_klines(
+            symbol=symbol.value, interval=interval.value, limit=2
+        )
         if candles:
             return parse_candle(candles[0])
-        raise Exception('Binance API didn\'t return any candle for symbol: {} and interval: {}. '.format(symbol.value, interval.value))
+        raise Exception(
+            "Binance API didn't return any candle for symbol: {} and interval: {}. ".format(
+                symbol.value, interval.value
+            )
+        )
     
-    def get_candles(self, symbol: Symbols, interval: Intervals, start_time: datetime, end_time: datetime):
+    def get_candles(
+        self,
+        symbol: Symbols,
+        interval: Intervals,
+        start_time: datetime = None,
+        end_time: datetime = None,
+        limit: int = None,
+    ):
         """
         Returns the last complete candle for the given symbol and interval.
         It means that the candle is complete, so the close time is before the current time. 
@@ -190,14 +232,22 @@ class BinanceClient(BrokerInterface):
             Example: [[1654686000000, 30382.79, 30504.86, 30340.73, 30419.64,
                         217.160362, 1654689599999, 6608879.303886, 6047, 125.007039, 3804377.38752454]]
         """
+        end_time = end_time or datetime.now()
         
-        start = round(start_time.timestamp()) * 1000
+        start = round(start_time.timestamp()) * 1000 if start_time else None
         end = round(min(end_time.timestamp(), datetime.now().timestamp())) * 1000
         candles = []
-        while(start < end):
-            candles_aux = self.client.get_klines(symbol=symbol.value, interval=interval.value, startTime = start, endTime = end, limit=1000)
+        while (start is None or start < end) and (limit is None or limit > 0):
+            candles_aux = self.client.get_klines(
+                symbol=symbol.value,
+                interval=interval.value,
+                startTime=start,
+                endTime=end,
+                limit=limit,
+            )
             candles = candles + candles_aux
             start = candles_aux[-1][6] if candles_aux else end
+            limit = limit - len(candles_aux) if limit else None
             
         return [parse_candle(candle) for candle in candles]
 
@@ -218,7 +268,12 @@ class BinanceClient(BrokerInterface):
             Assuming the symbol XY, it's the amount of Y to spend to buy X.
 
         """
-        return self.client.create_test_order(symbol = symbol.value, side = OperationType.BUY.value, type = OrderType.MARKET.value, quoteOrderQty = quantity)
+        return self.client.create_test_order(
+            symbol=symbol.value,
+            side=OperationType.BUY.value,
+            type=OrderType.MARKET.value,
+            quoteOrderQty=quantity,
+        )
         
     def create_sell_order(self, symbol: Symbols, quantity: float):
         """
@@ -237,18 +292,33 @@ class BinanceClient(BrokerInterface):
             Assuming the symbol XY, it's the amount of Y to spend to buy X.
 
         """
-        return self.client.create_test_order(symbol = symbol.value, side = OperationType.SELL.value, type = OrderType.MARKET.value, quantity = quantity)  
+        return self.client.create_test_order(
+            symbol=symbol.value,
+            side=OperationType.SELL.value,
+            type=OrderType.MARKET.value,
+            quantity=quantity,
+        )
     
     
 def parse_account_snapshot(snapshot):
-    vos = snapshot.get('snapshotVos')
+    vos = snapshot.get("snapshotVos")
     if len(vos) != 1:
-        raise Exception('There should be only one snapshot vos in Binance account snapshot.')
-    data = vos[0].get('data')
+        raise Exception(
+            "There should be only one snapshot vos in Binance account snapshot."
+        )
+    data = vos[0].get("data")
     return {
-        'totalAssetOfBtc': float(data.get('totalAssetOfBtc')),
-        'balances': [{'asset': balance.get('asset'), 'free': float(balance.get('free')), 'locked': float(balance.get('locked'))} for balance in data.get('balances')]
+        "totalAssetOfBtc": float(data.get("totalAssetOfBtc")),
+        "balances": [
+            {
+                "asset": balance.get("asset"),
+                "free": float(balance.get("free")),
+                "locked": float(balance.get("locked")),
+            }
+            for balance in data.get("balances")
+        ],
     }
+
 
 def parse_candle(candle):
     """Cast values to float and remove unused fields"""
