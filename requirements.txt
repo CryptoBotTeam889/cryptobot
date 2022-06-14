@@ -5,10 +5,13 @@ twine
 wheel>=0.29
 
 # data science
-numpy
+numpy==1.22.4
 pandas
-scikit-learn>=1.1.1
+scikit-learn==1.1.1
 pandas-ta
+matplotlib
+seaborn
+tensorflow==2.8.0
 
 # tests/linter
 black
